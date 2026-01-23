@@ -1,0 +1,33 @@
+{
+  "name": "@suite/web",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vinxi dev",
+    "build": "vinxi build",
+    "preview": "vinxi start",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@suite/auth": "workspace:*",
+    "@suite/env": "workspace:*",
+    "@suite/shared": "workspace:*",
+    "@tanstack/react-router": "^1.96.0",
+    "@tanstack/router-devtools": "^1.96.0",
+    "@tanstack/router-vite-plugin": "^1.96.0",
+    "@tanstack/start": "^1.140.0",
+    "@tanstack/react-query": "^5.62.11",
+    "posthog-js": "^1.309.1",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.19.2",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "typescript": "^5.9.3",
+    "vinxi": "^0.4.0",
+    "vite": "^7.0.0"
+  }
+}

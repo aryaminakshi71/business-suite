@@ -1,0 +1,27 @@
+{
+  "name": "@business-suite/platform",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Business Suite - Unified platform for Projects, CRM, Invoicing, Helpdesk, and Queue",
+  "author": "Arya Labs",
+  "license": "PROPRIETARY",
+  "packageManager": "bun@1.3.5",
+  "scripts": {
+    "dev": "turbo run dev",
+    "build": "turbo run build",
+    "typecheck": "turbo run typecheck",
+    "lint": "biome check .",
+    "format": "biome format --write .",
+    "clean": "rm -rf node_modules .turbo && find . -name 'node_modules' -type d -prune -exec rm -rf {} +"
+  },
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "devDependencies": {
+    "@biomejs/biome": "^1.9.4",
+    "turbo": "^2.4.4",
+    "typescript": "^5.9.3"
+  }
+}
