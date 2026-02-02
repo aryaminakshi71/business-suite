@@ -14,6 +14,7 @@ import { initDatadog } from "./lib/datadog.js";
 import { unifiedRouter } from "./routers/unified.js";
 import { integrationsRouter } from "./routers/integrations.js";
 import { moduleProxy } from "./middleware/proxy.js";
+import { rateLimitRedis } from "./middleware/rate-limit-redis.js";
 
 // Initialize monitoring
 initSentry();
@@ -37,6 +38,10 @@ app.use(
     credentials: true,
   })
 );
+
+// Rate limiting middleware
+app.use("/api/*", rateLimitRedis({ limiterType: "api" }));
+app.use("/api/auth/*", rateLimitRedis({ limiterType: "auth" }));
 
 // Health check
 app.get("/health", (c) => {

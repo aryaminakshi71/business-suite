@@ -33,12 +33,15 @@ export function moduleProxy(module: ModuleName) {
 
     try {
       // Forward request to module API
+      const headers = new Headers();
+      c.req.header().forEach((value, key) => {
+        headers.set(key, value);
+      });
+      headers.set("x-forwarded-for", c.req.header("cf-connecting-ip") || "");
+      
       const response = await fetch(url, {
         method: c.req.method,
-        headers: {
-          ...Object.fromEntries(c.req.header()),
-          "x-forwarded-for": c.req.header("cf-connecting-ip") || "",
-        },
+        headers,
         body: c.req.method !== "GET" && c.req.method !== "HEAD" 
           ? await c.req.raw.clone().arrayBuffer()
           : undefined,

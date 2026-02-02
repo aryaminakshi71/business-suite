@@ -4,6 +4,8 @@ import { PostHogProvider } from "@/components/providers/posthog-provider";
 import { Navigation } from "@/components/navigation";
 import { ErrorPage, NotFoundPage } from "@/components/error";
 import { generateOrganizationSchema, generateWebSiteSchema, getBusinessSuiteOrganizationSchema } from "@/lib/structured-data";
+import { registerServiceWorker } from "@/lib/service-worker";
+import { useEffect } from "react";
 
 export const Route = createRootRoute({
   head: () => ({
@@ -26,6 +28,10 @@ export const Route = createRootRoute({
     ],
   }),
   component: () => {
+    useEffect(() => {
+      registerServiceWorker();
+    }, []);
+
     const organizationSchema = generateOrganizationSchema(getBusinessSuiteOrganizationSchema())
     const websiteSchema = generateWebSiteSchema({
       name: 'Business Suite',

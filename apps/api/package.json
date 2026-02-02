@@ -13,6 +13,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@suite/auth": "workspace:*",
     "@suite/env": "workspace:*",
     "@suite/shared": "workspace:*",
     "@orpc/server": "^1.13.4",
@@ -20,6 +21,7 @@
     "@orpc/zod": "^1.13.4",
     "@sentry/node": "^8.0.0",
     "@upstash/ratelimit": "^2.0.7",
+    "@upstash/redis": "^1.36.1",
     "dd-trace": "^5.0.0",
     "hono": "^4.6.11",
     "zod": "^4.1.13"
