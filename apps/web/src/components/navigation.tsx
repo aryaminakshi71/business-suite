@@ -7,12 +7,12 @@ const modules: Array<{
   path: string;
   icon: string;
 }> = [
-  { name: "projects", displayName: "Projects", path: "/projects", icon: "📁" },
-  { name: "crm", displayName: "CRM", path: "/crm", icon: "👥" },
-  { name: "invoicing", displayName: "Invoicing", path: "/invoicing", icon: "💰" },
-  { name: "helpdesk", displayName: "Helpdesk", path: "/helpdesk", icon: "🎫" },
-  { name: "queue", displayName: "Queue", path: "/queue", icon: "🎟️" },
-];
+    { name: "projects", displayName: "Projects", path: "/projects", icon: "📁" },
+    { name: "crm", displayName: "CRM", path: "/crm", icon: "👥" },
+    { name: "invoicing", displayName: "Invoicing", path: "/invoicing", icon: "💰" },
+    { name: "helpdesk", displayName: "Helpdesk", path: "/helpdesk", icon: "🎫" },
+    { name: "queue", displayName: "Queue", path: "/queue", icon: "🎟️" },
+  ];
 
 export function Navigation() {
   const location = useLocation();
@@ -30,11 +30,10 @@ export function Navigation() {
                 <Link
                   key={module.name}
                   to={module.path}
-                  className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-                    location.pathname.startsWith(module.path)
-                      ? "bg-blue-50 text-blue-700"
-                      : "text-gray-600 hover:bg-gray-50"
-                  }`}
+                  className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${location.pathname.startsWith(module.path)
+                    ? "bg-blue-50 text-blue-700"
+                    : "text-gray-600 hover:bg-gray-50"
+                    }`}
                 >
                   <span className="mr-2">{module.icon}</span>
                   {module.displayName}
@@ -43,7 +42,9 @@ export function Navigation() {
             </div>
           </div>
           <div className="flex items-center space-x-4">
-            <AuthButton />
+            <a href="/login" className="px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-900">
+              Sign In
+            </a>
           </div>
         </div>
       </div>
