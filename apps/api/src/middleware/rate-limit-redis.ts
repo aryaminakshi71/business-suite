@@ -7,7 +7,7 @@
 
 import type { Context, Next } from "hono";
 import { Ratelimit } from "@upstash/ratelimit";
-import { redis } from "@suite/storage/redis";
+import { redis as redisClient } from "@suite/storage";
 import { RateLimitError } from "../lib/errors";
 
 interface RateLimitOptions {
@@ -24,12 +24,12 @@ const defaultLimiters = {
 };
 
 const createRateLimiter = (type: "api" | "auth" | "strict") => {
-  const redisClient = redis.client;
-  if (!redisClient) return null;
+  const client = redisClient.client;
+  if (!client) return null;
   
   const config = defaultLimiters[type];
   return new Ratelimit({
-    redis: redisClient as any,
+    redis: client as any,
     limiter: Ratelimit.slidingWindow(config.maxRequests, `${config.windowSeconds} s`),
     analytics: true,
     prefix: `ratelimit:${type}`,

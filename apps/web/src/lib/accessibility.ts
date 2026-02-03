@@ -125,6 +125,10 @@ export function addSkipLink(targetId: string, linkText: string = 'Skip to main c
       skipLink.style.width = '1px';
       skipLink.style.height = '1px';
     };
-    document.body.prepend(skipLink);
+    if (document.body.firstChild) {
+      document.body.insertBefore(skipLink, document.body.firstChild);
+    } else {
+      document.body.appendChild(skipLink);
+    }
   }
 }

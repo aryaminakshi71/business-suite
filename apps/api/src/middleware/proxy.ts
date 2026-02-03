@@ -29,13 +29,17 @@ export function moduleProxy(module: ModuleName) {
 
     // Extract path after /api/{module}/
     const path = c.req.path.replace(`/api/${module}`, "");
-    const url = `${moduleUrl}${path}${c.req.url.includes("?") ? "" : c.req.query() ? `?${new URLSearchParams(c.req.query()).toString()}` : ""}`;
+    const queryString = c.req.query() ? `?${new URLSearchParams(c.req.query() as Record<string, string>).toString()}` : "";
+    const url = `${moduleUrl}${path}${queryString}`;
 
     try {
       // Forward request to module API
       const headers = new Headers();
-      c.req.header().forEach((value, key) => {
-        headers.set(key, value);
+      const reqHeaders = c.req.header();
+      Object.entries(reqHeaders).forEach(([key, value]) => {
+        if (value) {
+          headers.set(key, String(value));
+        }
       });
       headers.set("x-forwarded-for", c.req.header("cf-connecting-ip") || "");
       

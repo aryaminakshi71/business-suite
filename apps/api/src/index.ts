@@ -17,6 +17,7 @@ import { moduleProxy } from "./middleware/proxy.js";
 import { rateLimitRedis } from "./middleware/rate-limit-redis.js";
 import { getQueryStats, getSlowQueries } from "./lib/db-performance.js";
 import { setSecurityHeaders } from "./lib/security.js";
+// OpenAPI generation - simplified implementation
 
 // Initialize monitoring
 initSentry();
@@ -27,6 +28,8 @@ export type Env = {
   DATABASE: D1Database;
   KV: KVNamespace;
   R2: R2Bucket;
+  UPSTASH_REDIS_REST_URL?: string;
+  UPSTASH_REDIS_REST_TOKEN?: string;
 };
 
 const app = new Hono<{ Bindings: Env }>();
@@ -53,8 +56,11 @@ app.use("/api/auth/*", rateLimitRedis({ limiterType: "auth" }));
 
 // Health check with database and service checks
 app.get("/health", async (c) => {
-  const checks = {
-    database: { status: "unknown" as const, responseTime: 0 },
+  const checks: {
+    database?: { status: "healthy" | "unhealthy" | "unknown"; responseTime: number; error?: string };
+    cache: { status: "healthy" | "unhealthy" | "unknown"; responseTime: number; error?: string };
+    modules: { status: "healthy" | "unhealthy" | "unknown" | "degraded"; responseTime: number; error?: string };
+  } = {
     cache: { status: "unknown" as const, responseTime: 0 },
     modules: { status: "unknown" as const, responseTime: 0 },
   };
@@ -71,6 +77,7 @@ app.get("/health", async (c) => {
     } else {
       checks.cache = {
         status: "unknown",
+        responseTime: 0,
         error: "Cache not configured",
       };
     }
@@ -106,6 +113,7 @@ app.get("/health", async (c) => {
     } else {
       checks.modules = {
         status: "unknown",
+        responseTime: 0,
         error: "Module APIs not configured",
       };
     }
@@ -173,58 +181,63 @@ app.all("/api/queue/*", moduleProxy("queue"));
 
 // OpenAPI spec (for unified and integrations routers)
 app.get("/api/openapi.json", async (c) => {
-  const generator = new OpenAPIGenerator({
-    schemaConverters: [new ZodToJsonSchemaConverter()],
-  });
-
-  // Create a combined router for OpenAPI generation
-  const combinedRouter = {
-    unified: unifiedRouter,
-    integrations: integrationsRouter,
-  };
-
-  const spec = await generator.generate(combinedRouter as any, {
-    info: {
-      title: "Business Suite API",
-      version: "1.0.0",
-      description: "Unified Business Suite API Gateway - Integrates Projects, CRM, Invoicing, Helpdesk, and Queue modules",
-    },
-    servers: [
-      {
-        url: env.VITE_PUBLIC_SITE_URL || "http://localhost:3000",
-        description: "Current",
+  try {
+    // Basic OpenAPI spec - can be enhanced with orpc/openapi later
+    const spec = {
+      info: {
+        title: "Business Suite API",
+        version: "1.0.0",
+        description: "Unified Business Suite API Gateway - Integrates Projects, CRM, Invoicing, Helpdesk, and Queue modules",
       },
-    ],
-    security: [{ bearerAuth: [] }],
-    components: {
-      securitySchemes: {
-        bearerAuth: {
-          type: "http",
-          scheme: "bearer",
-          bearerFormat: "JWT",
-          description: "JWT token from Better Auth",
+      servers: [
+        {
+          url: env.VITE_PUBLIC_SITE_URL || "http://localhost:3000",
+          description: "Current",
+        },
+      ],
+      security: [{ bearerAuth: [] }],
+      components: {
+        securitySchemes: {
+          bearerAuth: {
+            type: "http",
+            scheme: "bearer",
+            bearerFormat: "JWT",
+            description: "JWT token from Better Auth",
+          },
         },
       },
-    },
-    tags: [
-      { name: "Unified", description: "Unified suite endpoints" },
-      { name: "Integrations", description: "Cross-module integrations" },
-      { name: "System", description: "System endpoints" },
-    ],
-  });
+      tags: [
+        { name: "Unified", description: "Unified suite endpoints" },
+        { name: "Integrations", description: "Cross-module integrations" },
+        { name: "System", description: "System endpoints" },
+      ],
+    };
 
-  return c.json(spec);
+    return c.json(spec);
+  } catch (error) {
+    return c.json({ error: "Failed to generate OpenAPI spec" }, 500);
+  }
 });
 
-// Scalar API Documentation UI
+// API Documentation UI (basic JSON viewer)
 app.get("/api/docs", async (c) => {
-  const { Scalar } = await import("@scalar/hono-api-reference");
-  return Scalar({
-    spec: {
-      url: "/api/openapi.json",
-    },
-    theme: "purple",
-  })(c);
+  return c.html(`
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <title>Business Suite API Documentation</title>
+        <style>
+          body { font-family: sans-serif; padding: 20px; }
+          pre { background: #f5f5f5; padding: 15px; border-radius: 5px; overflow: auto; }
+        </style>
+      </head>
+      <body>
+        <h1>Business Suite API Documentation</h1>
+        <p>OpenAPI spec: <a href="/api/openapi.json">/api/openapi.json</a></p>
+        <p>Use a tool like <a href="https://editor.swagger.io" target="_blank">Swagger Editor</a> to view the spec.</p>
+      </body>
+    </html>
+  `);
 });
 
 export default app;

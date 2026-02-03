@@ -39,74 +39,76 @@ unifiedRouter.get("/dashboard/stats", requireAuth, async (c) => {
     const stats: SuiteStats = {
       projects: {
         total:
-          projectsStats.status === "fulfilled"
-            ? projectsStats.value?.total || 0
+          projectsStats.status === "fulfilled" && projectsStats.value
+            ? (projectsStats.value as { total?: number })?.total || 0
             : 0,
         active:
-          projectsStats.status === "fulfilled"
-            ? projectsStats.value?.active || 0
+          projectsStats.status === "fulfilled" && projectsStats.value
+            ? (projectsStats.value as { active?: number })?.active || 0
             : 0,
         completed:
-          projectsStats.status === "fulfilled"
-            ? projectsStats.value?.completed || 0
+          projectsStats.status === "fulfilled" && projectsStats.value
+            ? (projectsStats.value as { completed?: number })?.completed || 0
             : 0,
       },
       crm: {
         contacts:
-          crmStats.status === "fulfilled"
-            ? crmStats.value?.totalContacts || 0
+          crmStats.status === "fulfilled" && crmStats.value
+            ? (crmStats.value as { totalContacts?: number })?.totalContacts || 0
             : 0,
         deals:
-          crmStats.status === "fulfilled"
-            ? crmStats.value?.activeDeals || 0
+          crmStats.status === "fulfilled" && crmStats.value
+            ? (crmStats.value as { activeDeals?: number })?.activeDeals || 0
             : 0,
         revenue:
-          crmStats.status === "fulfilled" ? crmStats.value?.revenue || 0 : 0,
+          crmStats.status === "fulfilled" && crmStats.value
+            ? (crmStats.value as { revenue?: number })?.revenue || 0
+            : 0,
       },
       invoicing: {
         invoices:
-          invoicingStats.status === "fulfilled"
-            ? invoicingStats.value?.total || 0
+          invoicingStats.status === "fulfilled" && invoicingStats.value
+            ? (invoicingStats.value as { total?: number })?.total || 0
             : 0,
         paid:
-          invoicingStats.status === "fulfilled"
-            ? invoicingStats.value?.paid || 0
+          invoicingStats.status === "fulfilled" && invoicingStats.value
+            ? (invoicingStats.value as { paid?: number })?.paid || 0
             : 0,
         pending:
-          invoicingStats.status === "fulfilled"
-            ? invoicingStats.value?.pending || 0
+          invoicingStats.status === "fulfilled" && invoicingStats.value
+            ? (invoicingStats.value as { pending?: number })?.pending || 0
             : 0,
         revenue:
-          invoicingStats.status === "fulfilled"
-            ? invoicingStats.value?.revenue || 0
+          invoicingStats.status === "fulfilled" && invoicingStats.value
+            ? (invoicingStats.value as { revenue?: number })?.revenue || 0
             : 0,
       },
       helpdesk: {
         tickets:
-          helpdeskStats.status === "fulfilled"
-            ? helpdeskStats.value?.total || 0
+          helpdeskStats.status === "fulfilled" && helpdeskStats.value
+            ? (helpdeskStats.value as { total?: number })?.total || 0
             : 0,
         open:
-          helpdeskStats.status === "fulfilled"
-            ? helpdeskStats.value?.open || 0
+          helpdeskStats.status === "fulfilled" && helpdeskStats.value
+            ? (helpdeskStats.value as { open?: number })?.open || 0
             : 0,
         resolved:
-          helpdeskStats.status === "fulfilled"
-            ? helpdeskStats.value?.resolved || 0
+          helpdeskStats.status === "fulfilled" && helpdeskStats.value
+            ? (helpdeskStats.value as { resolved?: number })?.resolved || 0
             : 0,
       },
       queue: {
         tokens:
-          queueStats.status === "fulfilled"
-            ? queueStats.value?.total || 0
+          queueStats.status === "fulfilled" && queueStats.value
+            ? (queueStats.value as { total?: number })?.total || 0
             : 0,
         active:
-          queueStats.status === "fulfilled"
-            ? queueStats.value?.active || 0
+          queueStats.status === "fulfilled" && queueStats.value
+            ? (queueStats.value as { active?: number })?.active || 0
             : 0,
         completed:
-          queueStats.status === "fulfilled"
-            ? queueStats.value?.completed || 0
+          queueStats.status === "fulfilled" && queueStats.value
+            ? (queueStats.value as { completed?: number })?.completed || 0
             : 0,
       },
     };

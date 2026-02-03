@@ -42,13 +42,22 @@ export class APIError extends Error {
   }
 
   toJSON() {
-    return {
+    const result: {
+      name: string;
+      code: ErrorCode;
+      message: string;
+      statusCode: number;
+      details?: unknown;
+    } = {
       name: this.name,
       code: this.code,
       message: this.message,
       statusCode: this.statusCode,
-      ...(this.details && { details: this.details }),
     };
+    if (this.details !== undefined) {
+      result.details = this.details;
+    }
+    return result;
   }
 }
 
@@ -150,6 +159,14 @@ export const Errors = {
       retryAfter ? { retryAfter } : undefined
     ),
 };
+
+export class RateLimitError extends APIError {
+  constructor(message: string, public retryAfter: number) {
+    super(ErrorCode.RATE_LIMITED, message, 429, { retryAfter });
+    this.name = "RateLimitError";
+    Object.setPrototypeOf(this, RateLimitError.prototype);
+  }
+}
 
 // Error response formatter
 export interface ErrorResponse {

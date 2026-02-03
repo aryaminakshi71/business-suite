@@ -14,6 +14,25 @@ import { env } from "@suite/env/server";
 
 const integrationsRouter = new Hono();
 
+// Type definitions for external API responses
+interface CRMContact {
+  id: string;
+  firstName: string;
+  lastName: string;
+  email?: string;
+  phone?: string;
+  address?: string;
+}
+
+interface CRMDeal {
+  id: string;
+  contactId?: string;
+  name: string;
+  value: number | string;
+  status: string;
+  [key: string]: unknown;
+}
+
 /**
  * Convert CRM contact to Invoicing client
  */
@@ -40,7 +59,7 @@ integrationsRouter.post(
         return c.json({ error: "Contact not found" }, 404);
       }
 
-      const contact = await contactResponse.json();
+      const contact = (await contactResponse.json()) as CRMContact;
 
       // Create client in Invoicing
       const clientResponse = await fetch(
@@ -105,7 +124,7 @@ integrationsRouter.post(
         return c.json({ error: "Deal not found" }, 404);
       }
 
-      const deal = await dealResponse.json();
+      const deal = (await dealResponse.json()) as CRMDeal;
 
       // Get or create client from contact
       let clientId = deal.contactId;
@@ -124,8 +143,8 @@ integrationsRouter.post(
           }
         );
         if (convertResponse.ok) {
-          const { client } = await convertResponse.json();
-          clientId = client.id;
+          const result = (await convertResponse.json()) as { client: { id: string } };
+          clientId = result.client.id;
         }
       }
 
@@ -145,7 +164,7 @@ integrationsRouter.post(
               {
                 description: deal.name,
                 quantity: 1,
-                unitPrice: parseFloat(deal.value) || 0,
+                unitPrice: typeof deal.value === 'number' ? deal.value : parseFloat(String(deal.value)) || 0,
               },
             ],
             notes: `Invoice created from deal: ${deal.name}`,
@@ -197,7 +216,11 @@ integrationsRouter.post(
         return c.json({ error: "Ticket not found" }, 404);
       }
 
-      const ticket = await ticketResponse.json();
+      const ticket = (await ticketResponse.json()) as {
+        subject: string;
+        description: string;
+        requesterEmail: string;
+      };
 
       // Create activity in CRM
       const activityResponse = await fetch(

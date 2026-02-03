@@ -7,7 +7,7 @@ async function fetchActivity(limit: number = 20): Promise<UnifiedActivity[]> {
   if (!response.ok) {
     throw new Error("Failed to fetch activity");
   }
-  const data = await response.json();
+  const data = (await response.json()) as { activities?: UnifiedActivity[] };
   return data.activities || [];
 }
 
