@@ -15,6 +15,8 @@ import { unifiedRouter } from "./routers/unified.js";
 import { integrationsRouter } from "./routers/integrations.js";
 import { moduleProxy } from "./middleware/proxy.js";
 import { rateLimitRedis } from "./middleware/rate-limit-redis.js";
+import { getQueryStats, getSlowQueries } from "./lib/db-performance.js";
+import { setSecurityHeaders } from "./lib/security.js";
 
 // Initialize monitoring
 initSentry();
@@ -39,13 +41,116 @@ app.use(
   })
 );
 
+// Security headers middleware
+app.use("*", async (c, next) => {
+  await next();
+  setSecurityHeaders(c.res.headers);
+});
+
 // Rate limiting middleware
 app.use("/api/*", rateLimitRedis({ limiterType: "api" }));
 app.use("/api/auth/*", rateLimitRedis({ limiterType: "auth" }));
 
-// Health check
-app.get("/health", (c) => {
-  return c.json({ status: "ok", service: "business-suite-api" });
+// Health check with database and service checks
+app.get("/health", async (c) => {
+  const checks = {
+    database: { status: "unknown" as const, responseTime: 0 },
+    cache: { status: "unknown" as const, responseTime: 0 },
+    modules: { status: "unknown" as const, responseTime: 0 },
+  };
+
+  // Check cache (Redis/KV)
+  try {
+    const cacheStart = Date.now();
+    const redisUrl = c.env?.UPSTASH_REDIS_REST_URL || process.env.UPSTASH_REDIS_REST_URL;
+    if (redisUrl || c.env?.KV) {
+      checks.cache = {
+        status: "healthy",
+        responseTime: Date.now() - cacheStart,
+      };
+    } else {
+      checks.cache = {
+        status: "unknown",
+        error: "Cache not configured",
+      };
+    }
+  } catch (error) {
+    checks.cache = {
+      status: "unhealthy",
+      error: error instanceof Error ? error.message : "Unknown error",
+      responseTime: 0,
+    };
+  }
+
+  // Check module APIs (if configured)
+  try {
+    const modulesStart = Date.now();
+    const moduleUrls = [
+      env.PROJECTS_API_URL,
+      env.CRM_API_URL,
+      env.INVOICING_API_URL,
+      env.HELPDESK_API_URL,
+      env.QUEUE_API_URL,
+    ].filter(Boolean);
+
+    if (moduleUrls.length > 0) {
+      // Quick check of first module
+      const testUrl = moduleUrls[0];
+      if (testUrl) {
+        const response = await fetch(`${testUrl}/health`, { signal: AbortSignal.timeout(2000) }).catch(() => null);
+        checks.modules = {
+          status: response?.ok ? "healthy" : "degraded",
+          responseTime: Date.now() - modulesStart,
+        };
+      }
+    } else {
+      checks.modules = {
+        status: "unknown",
+        error: "Module APIs not configured",
+      };
+    }
+  } catch (error) {
+    checks.modules = {
+      status: "unhealthy",
+      error: error instanceof Error ? error.message : "Unknown error",
+      responseTime: 0,
+    };
+  }
+
+  // Determine overall status
+  const overallStatus =
+    checks.cache.status === "healthy" && checks.modules.status !== "unhealthy"
+      ? "ok"
+      : checks.cache.status === "unhealthy" || checks.modules.status === "unhealthy"
+        ? "error"
+        : "degraded";
+
+  return c.json({
+    status: overallStatus,
+    service: "business-suite-api",
+    timestamp: new Date().toISOString(),
+    version: "1.0.0",
+    services: {
+      ...(checks.cache && {
+        cache: {
+          status: checks.cache.status,
+          ...(checks.cache.responseTime && {
+            responseTime: checks.cache.responseTime,
+          }),
+          ...(checks.cache.error && { error: checks.cache.error }),
+        },
+      }),
+      ...(checks.modules && {
+        modules: {
+          status: checks.modules.status,
+          ...(checks.modules.responseTime && {
+            responseTime: checks.modules.responseTime,
+          }),
+          ...(checks.modules.error && { error: checks.modules.error }),
+        },
+      }),
+    },
+  });
 });
 
 // Auth endpoints (Better Auth)
@@ -65,5 +170,61 @@ app.all("/api/crm/*", moduleProxy("crm"));
 app.all("/api/invoicing/*", moduleProxy("invoicing"));
 app.all("/api/helpdesk/*", moduleProxy("helpdesk"));
 app.all("/api/queue/*", moduleProxy("queue"));
+
+// OpenAPI spec (for unified and integrations routers)
+app.get("/api/openapi.json", async (c) => {
+  const generator = new OpenAPIGenerator({
+    schemaConverters: [new ZodToJsonSchemaConverter()],
+  });
+
+  // Create a combined router for OpenAPI generation
+  const combinedRouter = {
+    unified: unifiedRouter,
+    integrations: integrationsRouter,
+  };
+
+  const spec = await generator.generate(combinedRouter as any, {
+    info: {
+      title: "Business Suite API",
+      version: "1.0.0",
+      description: "Unified Business Suite API Gateway - Integrates Projects, CRM, Invoicing, Helpdesk, and Queue modules",
+    },
+    servers: [
+      {
+        url: env.VITE_PUBLIC_SITE_URL || "http://localhost:3000",
+        description: "Current",
+      },
+    ],
+    security: [{ bearerAuth: [] }],
+    components: {
+      securitySchemes: {
+        bearerAuth: {
+          type: "http",
+          scheme: "bearer",
+          bearerFormat: "JWT",
+          description: "JWT token from Better Auth",
+        },
+      },
+    },
+    tags: [
+      { name: "Unified", description: "Unified suite endpoints" },
+      { name: "Integrations", description: "Cross-module integrations" },
+      { name: "System", description: "System endpoints" },
+    ],
+  });
+
+  return c.json(spec);
+});
+
+// Scalar API Documentation UI
+app.get("/api/docs", async (c) => {
+  const { Scalar } = await import("@scalar/hono-api-reference");
+  return Scalar({
+    spec: {
+      url: "/api/openapi.json",
+    },
+    theme: "purple",
+  })(c);
+});
 
 export default app;

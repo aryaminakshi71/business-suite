@@ -5,6 +5,7 @@ import { Navigation } from "@/components/navigation";
 import { ErrorPage, NotFoundPage } from "@/components/error";
 import { generateOrganizationSchema, generateWebSiteSchema, getBusinessSuiteOrganizationSchema } from "@/lib/structured-data";
 import { registerServiceWorker } from "@/lib/service-worker";
+import { addSkipLink } from "@/lib/accessibility";
 import { useEffect } from "react";
 
 export const Route = createRootRoute({
@@ -30,6 +31,8 @@ export const Route = createRootRoute({
   component: () => {
     useEffect(() => {
       registerServiceWorker();
+      // Add skip link for accessibility
+      addSkipLink("main-content", "Skip to main content");
     }, []);
 
     const organizationSchema = generateOrganizationSchema(getBusinessSuiteOrganizationSchema())
@@ -60,7 +63,7 @@ export const Route = createRootRoute({
           <PostHogProvider>
             <div className="min-h-screen bg-gray-50">
               <Navigation />
-              <main className="container mx-auto px-4 py-8">
+              <main id="main-content" className="container mx-auto px-4 py-8" tabIndex={-1}>
                 <Outlet />
               </main>
               {import.meta.env.DEV && <TanStackRouterDevtools />}

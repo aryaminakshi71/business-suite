@@ -15,6 +15,7 @@ import { Route as InvoicingRouteImport } from './routes/invoicing'
 import { Route as HelpdeskRouteImport } from './routes/helpdesk'
 import { Route as CrmRouteImport } from './routes/crm'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AppBillingRouteImport } from './routes/app/billing'
 
 const QueueRoute = QueueRouteImport.update({
   id: '/queue',
@@ -46,6 +47,11 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AppBillingRoute = AppBillingRouteImport.update({
+  id: '/app/billing',
+  path: '/app/billing',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -54,6 +60,7 @@ export interface FileRoutesByFullPath {
   '/invoicing': typeof InvoicingRoute
   '/projects': typeof ProjectsRoute
   '/queue': typeof QueueRoute
+  '/app/billing': typeof AppBillingRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -62,6 +69,7 @@ export interface FileRoutesByTo {
   '/invoicing': typeof InvoicingRoute
   '/projects': typeof ProjectsRoute
   '/queue': typeof QueueRoute
+  '/app/billing': typeof AppBillingRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -71,12 +79,27 @@ export interface FileRoutesById {
   '/invoicing': typeof InvoicingRoute
   '/projects': typeof ProjectsRoute
   '/queue': typeof QueueRoute
+  '/app/billing': typeof AppBillingRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/crm' | '/helpdesk' | '/invoicing' | '/projects' | '/queue'
+  fullPaths:
+    | '/'
+    | '/crm'
+    | '/helpdesk'
+    | '/invoicing'
+    | '/projects'
+    | '/queue'
+    | '/app/billing'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/crm' | '/helpdesk' | '/invoicing' | '/projects' | '/queue'
+  to:
+    | '/'
+    | '/crm'
+    | '/helpdesk'
+    | '/invoicing'
+    | '/projects'
+    | '/queue'
+    | '/app/billing'
   id:
     | '__root__'
     | '/'
@@ -85,6 +108,7 @@ export interface FileRouteTypes {
     | '/invoicing'
     | '/projects'
     | '/queue'
+    | '/app/billing'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -94,6 +118,7 @@ export interface RootRouteChildren {
   InvoicingRoute: typeof InvoicingRoute
   ProjectsRoute: typeof ProjectsRoute
   QueueRoute: typeof QueueRoute
+  AppBillingRoute: typeof AppBillingRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -140,6 +165,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/app/billing': {
+      id: '/app/billing'
+      path: '/app/billing'
+      fullPath: '/app/billing'
+      preLoaderRoute: typeof AppBillingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -150,6 +182,7 @@ const rootRouteChildren: RootRouteChildren = {
   InvoicingRoute: InvoicingRoute,
   ProjectsRoute: ProjectsRoute,
   QueueRoute: QueueRoute,
+  AppBillingRoute: AppBillingRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

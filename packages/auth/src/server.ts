@@ -7,6 +7,23 @@ import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { db, schema } from "@suite/storage/db";
 import { env } from "@suite/env/server";
+import { createStripePlugin, createStripeClient } from "./config/stripe";
+
+// Build plugins array
+const plugins: any[] = [];
+
+// Add Stripe plugin if configured
+if (env.STRIPE_SECRET_KEY && env.STRIPE_WEBHOOK_SECRET) {
+  const stripeClient = createStripeClient(env.STRIPE_SECRET_KEY);
+  plugins.push(
+    createStripePlugin({
+      stripeClient,
+      webhookSecret: env.STRIPE_WEBHOOK_SECRET,
+      db,
+      appId: "business-suite",
+    })
+  );
+}
 
 export const auth = betterAuth({
   database: drizzleAdapter(db, {
@@ -46,6 +63,7 @@ export const auth = betterAuth({
     enabled: true,
     requireMFA: false,
   },
+  plugins,
   secret: env.BETTER_AUTH_SECRET,
   baseURL: env.VITE_PUBLIC_SITE_URL,
   basePath: "/api/auth",

@@ -13,7 +13,16 @@
     "typecheck": "turbo run typecheck",
     "lint": "biome check .",
     "format": "biome format --write .",
-    "clean": "rm -rf node_modules .turbo && find . -name 'node_modules' -type d -prune -exec rm -rf {} +"
+    "clean": "rm -rf node_modules .turbo && find . -name 'node_modules' -type d -prune -exec rm -rf {} +",
+    "test": "turbo run test",
+    "test:watch": "turbo run test:watch",
+    "test:coverage": "turbo run test:coverage",
+    "test:ci": "turbo run test:ci",
+    "test:unit": "turbo run test:unit",
+    "test:integration": "turbo run test:integration",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
+    "test:all": "bun run test && bun run test:integration && bun run test:e2e"
   },
   "workspaces": [
     "apps/*",
