@@ -23,7 +23,7 @@
     "@upstash/ratelimit": "^2.0.7",
     "@upstash/redis": "^1.36.1",
     "dd-trace": "^5.0.0",
-    "hono": "^4.6.11",
+    "hono": "^4.7.10",
     "openai": "^6.17.0",
     "zod": "^4.1.13"
   },

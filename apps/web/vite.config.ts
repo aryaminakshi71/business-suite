@@ -28,6 +28,12 @@ export default defineConfig(({ mode }) => {
             minify: "esbuild",
             sourcemap: false,
             chunkSizeWarningLimit: 1000,
+            rollupOptions: {
+                external: [
+                    // Externalize Cloudflare-specific modules
+                    "cloudflare:workers",
+                ],
+            },
         },
         ssr: {
             noExternal: ["@suite/*"],

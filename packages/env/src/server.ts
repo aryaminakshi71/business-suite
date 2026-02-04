@@ -4,11 +4,31 @@
  */
 
 /// <reference types="@cloudflare/workers-types" />
-import { env as cfEnv } from "cloudflare:workers";
 import { z } from "zod";
 import { clientSchema } from "./client.js";
 
-const serverSchema = clientSchema.extend({
+// Get environment variables - works in both CF Workers and Node.js
+// When SKIP_CLOUDFLARE=true, use process.env; otherwise use cloudflare:workers
+function getEnv(): Record<string, unknown> {
+  // @ts-ignore - cloudflare:workers is a virtual module only available in CF Workers
+  if (typeof globalThis !== 'undefined' && 'process' in globalThis && process.env) {
+    // Node.js environment (SKIP_CLOUDFLARE=true)
+    return process.env as Record<string, unknown>;
+  }
+  // Try to use cloudflare:workers (will be externalized in build)
+  try {
+    // @ts-ignore
+    const cfModule = require("cloudflare:workers");
+    return cfModule.env;
+  } catch {
+    // Fallback to process.env
+    return (typeof process !== 'undefined' ? process.env : {}) as Record<string, unknown>;
+  }
+}
+
+const cfEnv = getEnv();
+
+export const serverSchema = clientSchema.extend({
   NODE_ENV: z
     .enum(["development", "production", "test"])
     .default("development"),
