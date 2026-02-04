@@ -50,11 +50,7 @@ app.use("*", async (c, next) => {
   setSecurityHeaders(c.res.headers);
 });
 
-// Rate limiting middleware
-app.use("/api/*", rateLimitRedis({ limiterType: "api" }));
-app.use("/api/auth/*", rateLimitRedis({ limiterType: "auth" }));
-
-// Health check with database and service checks
+// Health check with database and service checks - must be before rate limiting
 app.get("/health", async (c) => {
   const checks: {
     database?: { status: "healthy" | "unhealthy" | "unknown"; responseTime: number; error?: string };
@@ -160,6 +156,111 @@ app.get("/health", async (c) => {
     },
   });
 });
+
+// Also provide /api/health as an alias (same logic as /health)
+app.get("/api/health", async (c) => {
+  const checks: {
+    database?: { status: "healthy" | "unhealthy" | "unknown"; responseTime: number; error?: string };
+    cache: { status: "healthy" | "unhealthy" | "unknown"; responseTime: number; error?: string };
+    modules: { status: "healthy" | "unhealthy" | "unknown" | "degraded"; responseTime: number; error?: string };
+  } = {
+    cache: { status: "unknown" as const, responseTime: 0 },
+    modules: { status: "unknown" as const, responseTime: 0 },
+  };
+
+  // Check cache (Redis/KV)
+  try {
+    const cacheStart = Date.now();
+    const redisUrl = c.env?.UPSTASH_REDIS_REST_URL || process.env.UPSTASH_REDIS_REST_URL;
+    if (redisUrl || c.env?.KV) {
+      checks.cache = {
+        status: "healthy",
+        responseTime: Date.now() - cacheStart,
+      };
+    } else {
+      checks.cache = {
+        status: "unknown",
+        responseTime: 0,
+        error: "Cache not configured",
+      };
+    }
+  } catch (error) {
+    checks.cache = {
+      status: "unhealthy",
+      error: error instanceof Error ? error.message : "Unknown error",
+      responseTime: 0,
+    };
+  }
+
+  // Check module APIs (if configured)
+  try {
+    const modulesStart = Date.now();
+    const moduleUrls = [
+      env.PROJECTS_API_URL,
+      env.CRM_API_URL,
+      env.INVOICING_API_URL,
+      env.HELPDESK_API_URL,
+      env.QUEUE_API_URL,
+    ].filter(Boolean);
+
+    if (moduleUrls.length > 0) {
+      const testUrl = moduleUrls[0];
+      if (testUrl) {
+        const response = await fetch(`${testUrl}/health`, { signal: AbortSignal.timeout(2000) }).catch(() => null);
+        checks.modules = {
+          status: response?.ok ? "healthy" : "degraded",
+          responseTime: Date.now() - modulesStart,
+        };
+      }
+    } else {
+      checks.modules = {
+        status: "unknown",
+        responseTime: 0,
+        error: "Module APIs not configured",
+      };
+    }
+  } catch (error) {
+    checks.modules = {
+      status: "unhealthy",
+      error: error instanceof Error ? error.message : "Unknown error",
+      responseTime: 0,
+    };
+  }
+
+  const overallStatus =
+    checks.cache.status === "healthy" && checks.modules.status !== "unhealthy"
+      ? "ok"
+      : checks.cache.status === "unhealthy" || checks.modules.status === "unhealthy"
+        ? "error"
+        : "degraded";
+
+  return c.json({
+    status: overallStatus,
+    service: "business-suite-api",
+    timestamp: new Date().toISOString(),
+    version: "1.0.0",
+    services: {
+      ...(checks.cache && {
+        cache: {
+          status: checks.cache.status,
+          ...(checks.cache.responseTime && { responseTime: checks.cache.responseTime }),
+          ...(checks.cache.error && { error: checks.cache.error }),
+        },
+      }),
+      ...(checks.modules && {
+        modules: {
+          status: checks.modules.status,
+          ...(checks.modules.responseTime && { responseTime: checks.modules.responseTime }),
+          ...(checks.modules.error && { error: checks.modules.error }),
+        },
+      }),
+    },
+  });
+});
+
+// Rate limiting middleware
+app.use("/api/*", rateLimitRedis({ limiterType: "api" }));
+app.use("/api/auth/*", rateLimitRedis({ limiterType: "auth" }));
 
 // Auth endpoints (Better Auth)
 app.all("/api/auth/*", async (c) => {

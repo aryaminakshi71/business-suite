@@ -58,23 +58,35 @@ export function rateLimitRedis(options: Partial<RateLimitOptions> = {}) {
   };
 
   return async (c: Context, next: Next) => {
+    // Skip rate limiting for health endpoints
+    if (c.req.path === "/api/health" || c.req.path === "/health") {
+      await next();
+      return;
+    }
+
     const key = opts.keyGenerator!(c);
     
     if (opts.limiterType && rateLimiters[opts.limiterType]) {
       const limiter = rateLimiters[opts.limiterType]!;
-      const result = await limiter.limit(key);
-      
-      if (!result.success) {
-        const retryAfter = Math.ceil((result.reset - Date.now()) / 1000);
-        throw new RateLimitError(
-          `Rate limit exceeded. Please try again in ${retryAfter} seconds.`,
-          retryAfter,
-        );
+      try {
+        const result = await limiter.limit(key);
+        
+        if (!result.success) {
+          const retryAfter = Math.ceil((result.reset - Date.now()) / 1000);
+          throw new RateLimitError(
+            `Rate limit exceeded. Please try again in ${retryAfter} seconds.`,
+            retryAfter,
+          );
+        }
+        
+        c.header("X-RateLimit-Limit", result.limit.toString());
+        c.header("X-RateLimit-Remaining", result.remaining.toString());
+        c.header("X-RateLimit-Reset", result.reset.toString());
+      } catch (err) {
+        if (err instanceof RateLimitError) throw err;
+        // Fail open if Redis fails
+        console.error("Rate limit error (fail open):", err);
       }
-      
-      c.header("X-RateLimit-Limit", result.limit.toString());
-      c.header("X-RateLimit-Remaining", result.remaining.toString());
-      c.header("X-RateLimit-Reset", result.reset.toString());
       
       await next();
       return;
