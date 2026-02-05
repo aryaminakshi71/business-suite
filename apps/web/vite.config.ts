@@ -18,6 +18,7 @@ export default defineConfig(({ mode }) => {
     const env = loadEnv(mode, path.resolve(__dirname, "../../"), "");
     // PORT from shell environment takes highest priority
     const port = shellPort || env.PORT || "3000";
+    const devtoolsPort = Number.isFinite(Number(port)) ? Number(port) + 10000 : 42069;
     process.env = { ...process.env, ...env };
 
     return {
@@ -74,7 +75,11 @@ export default defineConfig(({ mode }) => {
                     persist: true,
                 })
             ] : []),
-            devtools(),
+            devtools({
+                eventBusConfig: {
+                    port: devtoolsPort,
+                },
+            }),
             tailwindcss(),
             tanstackStart({
                 srcDirectory: "src",

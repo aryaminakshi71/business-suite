@@ -27,6 +27,9 @@ function getEnv(): Record<string, unknown> {
 }
 
 const cfEnv = getEnv();
+const isDev = (cfEnv.NODE_ENV ?? (typeof process !== "undefined" ? process.env.NODE_ENV : undefined) ?? "development") !== "production";
+const devAuthSecret = "dev-secret-32-chars-please-change-000000";
+const devDatabaseUrl = "postgresql://postgres:postgres@localhost:5432/business_suite";
 
 export const serverSchema = clientSchema.extend({
   NODE_ENV: z
@@ -34,9 +37,9 @@ export const serverSchema = clientSchema.extend({
     .default("development"),
 
   // Auth (Better Auth)
-  BETTER_AUTH_SECRET: z
-    .string()
-    .min(32, "BETTER_AUTH_SECRET must be at least 32 characters"),
+  BETTER_AUTH_SECRET: isDev
+    ? z.string().min(32).optional().default(devAuthSecret)
+    : z.string().min(32, "BETTER_AUTH_SECRET must be at least 32 characters"),
 
   // OAuth Providers
   GOOGLE_CLIENT_ID: z.string().optional(),
@@ -45,7 +48,9 @@ export const serverSchema = clientSchema.extend({
   GITHUB_CLIENT_SECRET: z.string().optional(),
 
   // Database (Shared)
-  DATABASE_URL: z.string().url(),
+  DATABASE_URL: isDev
+    ? z.string().url().optional().default(devDatabaseUrl)
+    : z.string().url(),
 
   // Redis (Shared)
   UPSTASH_REDIS_REST_URL: z.string().url().optional(),

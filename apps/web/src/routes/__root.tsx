@@ -1,17 +1,35 @@
-import * as React from 'react'
-import { Outlet, createRootRoute } from '@tanstack/react-router'
+import { HeadContent, Scripts, Outlet, createRootRoute } from '@tanstack/react-router'
 import { QueryClientProvider } from "@tanstack/react-query";
 import { queryClient } from "../router";
 
 export const Route = createRootRoute({
-  component: RootComponent,
+  head: () => ({
+    meta: [
+      { charSet: 'utf-8' },
+      { name: 'viewport', content: 'width=device-width, initial-scale=1' },
+      { title: 'Business Suite - Unified Operations Dashboard' },
+      {
+        name: 'description',
+        content:
+          'Unified business suite dashboard to manage projects, CRM, invoicing, and support in one place.',
+      },
+    ],
+  }),
+  component: RootDocument,
 })
 
-function RootComponent() {
+function RootDocument() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <div>Hello "__root"!</div>
-      <Outlet />
-    </QueryClientProvider>
+    <html lang="en">
+      <head>
+        <HeadContent />
+      </head>
+      <body>
+        <QueryClientProvider client={queryClient}>
+          <Outlet />
+          <Scripts />
+        </QueryClientProvider>
+      </body>
+    </html>
   )
 }

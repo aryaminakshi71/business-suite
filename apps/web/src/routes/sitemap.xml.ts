@@ -1,14 +1,22 @@
+import { createFileRoute } from '@tanstack/react-router'
 import { generateSitemap, getBusinessSuiteRoutes } from '@/lib/sitemap'
 
-export async function GET() {
-  const baseUrl = import.meta.env.VITE_PUBLIC_SITE_URL || 'https://business-suite.your-domain.com'
-  const routes = getBusinessSuiteRoutes()
-  const sitemap = generateSitemap(routes, baseUrl)
+export const Route = createFileRoute('/sitemap/xml')({
+  server: {
+    handlers: {
+      GET: () => {
+        const baseUrl =
+          import.meta.env.VITE_PUBLIC_SITE_URL || 'https://business-suite.your-domain.com'
+        const routes = getBusinessSuiteRoutes()
+        const sitemap = generateSitemap(routes, baseUrl)
 
-  return new Response(sitemap, {
-    headers: {
-      'Content-Type': 'application/xml',
-      'Cache-Control': 'public, max-age=3600, s-maxage=3600',
+        return new Response(sitemap, {
+          headers: {
+            'Content-Type': 'application/xml',
+            'Cache-Control': 'public, max-age=3600, s-maxage=3600',
+          },
+        })
+      },
     },
-  })
-}
+  },
+})
